@@ -1,0 +1,153 @@
+%left "+" "-";
+%left "*" "/";
+%left "=>";
+%left "&&" "||";
+
+Specification ::= Name 'n' 
+                        Configuration 'conf' 
+                        Init 'ini' 
+                        Rules 'rules';
+
+Name ::=  <String> 'solitaryName' "solitary"  { solitaryName };
+Cuantity ::= <natural> 'n' {n} | "none" {0};
+
+Configuration ::=     Decks Piles [Talons] Foundations;
+
+Decks ::= "decks" <def> DeckDef+; 
+DeckDef ::= DeckType 'deckType' "deck" "named" <string> 'deckName' <end> { Sol.SolApplication.GrammarBuilder buildDeck: deckName type: deckType };
+DeckType ::= "Spanish" { #Spanish } | 
+                     "Pocker" { #Pocker };
+
+Piles ::= "piles" <def> PileDef+;
+PileDef ::= "pile" "named" <string> 'pileName' <end> { Sol.SolApplication.GrammarBuilder buildPileNamed: pileName } |
+                Cuantity 'cantPiles' "numbered" "piles" "named" <string> 'groupPileName' <end> 
+                     { Sol.SolApplication.GrammarBuilder buildPilesGroup: pileGroupName cant: pilesCant };
+      
+Talons ::= "talons" <def> TalonDef+;
+TalonDef ::= "talon" "named" <string> 'talonName' <end> { Sol.SolApplication.GrammarBuilder buildTalonNamed: talonName };
+
+Foundations ::= "Foundations" <def> Cuantity 'cant' <end> { Sol.SolApplication.GrammarBuilder buildFoundations: cant value };
+
+Distribute ::= "distribute" <def> DistributionDef+ <end>;
+DistributionDef ::= PileCardsCount 'cardsCount' "cards" "from" <string> 'sourceDeckName' "to" <string> 'targetPileName' 
+                                 { Sol.SolApplication.GrammarBuilder distribute: cardsCount from: sourceDeckName to: targetPileName };
+PileCardsCount ::= <natural> 'cant' { cant } |
+                             "all" { #all } |
+                             "rest" { #rest };
+
+Rules ::= "rules" <sep> RuleDef+;
+RuleDef ::= when" RuleCondition 'condition' RuleAction 'actions' 
+                     { Sol.SolApplication.GrammarBuilder buildRule: condition actions: actions } 
+
+Actions ::= {OrderedCollection new} |  
+                 Action 'action' <end> {action} | 
+                 Action 'action' ";" Actions 'actions' { actions add: action; yourself };
+
+Action ::= "move" PileCardsCount 'cardsCount "from" <string> 'sourcePileName' "to" <string> 'targetPileName' 
+                      { Sol.SolApplication.GrammarBuilder move: cardsCount from: sourcePileName to: targetPileName } |  
+               "remove" PileCardsCount 'cardsCount' "from" <string> 'pileName'  { Sol.SolApplication.GrammarBuilder remove: cardsCount cardsFrom: pileName } |
+               "win" { Sol.SolApplication.GrammarBuilder win } |
+               "lose" { Sol.SolApplication.GrammarBuilder lose };
+
+Variable ::= <string> 'variableName' { variableName };
+
+# the builder builds the "important structures", it doesnt care about boolean expresions
+Condition ::= Condition 'cond1' "and" Condition 'cond2' { cond1 && cond2 }
+                  | Condition 'cond1' "or" Condition 'cond2' { cond1  || cond2 }
+                  | Condition 'cond1' "=>" Condition 'cond1' { cond1not || cond2 }
+                  | "not" Condition 'cond' { cond not }
+                  | "true" {true}
+                  | "false" {false}
+			| "for-all" Variable 'element' "in" <string> 'setName' "check"  Condition 'cond' 
+                       { Sol.SolApplication.GrammarBuilder forAll: element in: setName check: check: cond }
+			| "exists" Variable 'element' "in" <string> 'setName' "such" "that" Condition 'cond' 
+                       { Sol.SolApplication.GrammarBuilder exists: element in: setName that: cond }
+                  | BooleanOperation
+			| "(" Condition 'cond' ")" { cond };
+
+BooleanOperation ::= <string> 'pileName' "is" "empty"  { Sol.SolApplication.GrammarBuilder buildIsEmptyPile: pileName }
+			 | EqExpression 'e' {e}
+                   | IntegerSubExpression 'e1' ComparisonOperator 'op' IntegerSubExpression 'e2' {op new: e1 and:e2}
+			 | "(" Condiciones 'cs' ")" {cs};
+
+EqExpression ::= IntegerSubExpression 'e1' EqOp 'op' IntegerSubExpression 'e2' { op new:e1 and:e2 }
+                   | SuitSubExpression 'e1' EqOp 'op' SuitSubExpression 'e2' {op new:e1 and:e2}
+                   | ColorSubExpression 'e1' EqOp 'op' ColorSubExpression 'e2' {op new:e1 and:e2}
+                   | TypeSubExpression 'e1' EqOp 'op' TypeSubExpression 'e2' {op new:e1 and:e2.}
+                   | Card 'c1' EqOp 'op' Card 'c2' {op new:c1 and:c2};
+
+TypeSubExpression ::= "tipo" "(" Card 'p' ")" {Sol.Grammar.CardType new:p} | CardType 't' {t}
+					| "anterior" "(" TypeSubExpression 't' ")" {Sol.Grammar.PreviousCardType new:t}
+					| "siguiente" "(" TypeSubExpression 't' ")" {Sol.Grammar.NextCardType new: t};
+
+CardType ::= Number 'n' {Sol.SolApplication.GrammerBuilder buildCardNumbered: n }  | 
+                    "as" {Sol.SolApplication.GrammerBuilder buildAsCard } | 
+                    "king" {Sol.SolApplication.GrammerBuilder buildKingCard } | 
+                    "queen" {Sol.SolApplication.GrammerBuilder buildQueenCard } | 
+                    "joker" {Sol.SolApplication.GrammerBuilder buildJoker } | 
+                    "zota" {Sol.SolApplication.GrammerBuilder buildTen };
+
+Number ::= "uno" {1} | 
+                 "dos" {2} | 
+                 "tres" {3} | 
+                 "cuatro" {4} | 
+                 "cinco" {5} | 
+                 "seis" {6} | 
+                 "siete" {7} | 
+                 "ocho" {8} |
+                 "nueve" {9} | 
+                 "diez" {10};
+
+EqOp ::= "=" {Sol.SolApplication.GrammarBuilder buildComparison } | 
+              "/="  {Sol.SolApplication.GrammarBuilder buildComparisonNot };
+
+SuitSubExpression ::= "palo" "(" Card 'card' ")" {Sol.Grammar.CardSuit new:card} | Suit 's' {s};
+
+Suit ::= "espada" {Sol.SolApplication.GrammarBuilder buildSpadeSuit} | 
+            "oro" { Sol.SolApplication.GrammarBuilder buildGoldSuit } | 
+            "copa" { Sol.SolApplication.GrammarBuilder buildCupSuit } | 
+            "basto" { Sol.SolApplication.GrammarBuilder buildRoughSuit } |
+		"trebol" { Sol.SolApplication.GrammarBuilder buildClubSuit } | 
+            "corazon" { Sol.SolApplication.GrammarBuilder buildHeartSuit } | 
+            "pica" {Sol.SolApplication.GrammarBuilder buildSpadeSuit } | 
+            "diamante" { Sol.SolApplication.GrammarBuilder buildDiamondSuit };
+
+Color ::= "rojo" | "negro";
+
+Card ::= "tope" "(" BasicPile 'p' ")" { Sol.SolApplication.GrammarBuilder buildTopPile: p } |
+             "siguiente" "(" Card 'c' ")" { Sol.SolApplication.GrammarBuilder buildNextCard:c } |
+             "anterior" "(" Card 'c' ")"   { Sol.SolApplication.GrammarBuilder buildPreviousCard:c }; 
+
+#ColorSubExpression ::= "color" "(" Card 'c' ")" { Sol.SolApplication.GrammarBuilder buildCardColorExpression new: c} | 
+#                                   "rojo" {Sol.Grammar.Red new} | 
+#                                   "negro" {Sol.Grammar.Black new};
+
+IntegerSubExpression ::= CardsCountInPile 'c' {c}
+				 | CardsCountInPiles 'cp' {cp}
+				 | Cuantity 'n' {n value}
+                         | IntegerSubExpression 'e1' "+" IntegerSubExpression 'e2' {Sol.SolApplication.GrammarBuilder buildPlus: e1 and: e2}
+                         | IntegerSubExpression 'e1' "*" IntegerSubExpression 'e2' {Sol.SolApplication.GrammarBuilder buildMult new: e1 and: e2}
+                         | IntegerSubExpression 'e1' "-" IntegerSubExpression 'e2' {Sol.SolApplication.GrammarBuilder buildSub: e1 and: e2}
+                         | IntegerSubExpression 'e1' "/" IntegerSubExpression 'e2' {Sol.SolApplication.GrammarBuilder buildDiv: e1 and: e2}
+                         | "(" IntegerSubExpression 'e' ")" {e};
+
+CardsCountInPile ::= "cantidad" "de" "cartas" "(" BasicPile 'p' ")" { Sol.SolApplication.GrammarBuilder buildCardsCountInPile: p };
+CardsCountInPiles ::= "cantidad" "en" "(" PileType 'pt' ")" { Sol.SolApplication.GrammarBuilder buildCardsCountInPileType: pt};
+
+PileType ::= "bases" {Sol.SolApplication.GrammarBuild buildFoundationPileType } | 
+                   "pozos" {Sol.SolApplication.GrammarBuild buildTalonPileType } | 
+                   "pilas" "auxiliares" {Sol.SolApplication.GrammarBuild buildWastePileType } |
+			 "mazos" { Sol.SolApplication.GrammarBuild buildAllDecksType };
+
+ComparisonOperator ::= ">" {Sol.SolApplication.GrammarBuild buildGreaterOperator} | 
+                                    ">=" { Sol.SolApplication.GrammarBuild buildGreaterOrEqualOperator} | 
+                                    "<" { Sol.SolApplication.GrammarBuild buildLowerOperator } | 
+                                    "<=" { Sol.SolApplication.GrammarBuild buildLowerOrEqualOperator };
+
+
+
+
+
+
+
+

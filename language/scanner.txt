@@ -1,0 +1,12 @@
+<whitespace> : \s+;
+<eol> : \r | \n | \r\n ;
+<line> : \% ;
+<natural> : [0-9]+;
+<Id> : [A-Z] \w*;
+<id> : [a-z] \w*;
+<def_1> : \:;
+<def_2> : \?;
+<end> : \.;
+<sep_1> : \;;
+<literal_string> : \' \w* \';
+<string> : \w+;

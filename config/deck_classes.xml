@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!-- 
+
+     Golf.xml pertenece a la configuracion de la *aplicacion final* y por lo tanto no va
+     a existir realmente (se especificara mediante el DSL especificamente creado).
+     Notar que este XML corresponde a la configuración del *framework*.
+     Poner la configuracion en un archivo XML solo se hace por cuestiones
+     de legibilidad (me parece mejor que ponerlo en codigo Smalltalk). No hay verdadera
+     necesidad de que se encuentre aparte ya que no hay configuracion en tiempo de
+     ejecucion.
+     
+-->
+     
+     
+
+<deck_classes>
+	<deck_class>
+        <name>Pocker</name>
+		<suits>
+			<suit>diamonds</suit>
+			<suit>hearts</suit>
+			<suit>spades</suit>
+			<suit>clubs</suit>
+		</suits>
+
+		<!-- Defino solo el nombre, el valor se los da el juego -->
+		<cards_per_suit>
+			<card>King</card>
+			<card>Queen</card>
+			<card>10</card>
+			<card>9</card>
+			<card>8</card>
+			<card>7</card>
+			<card>6</card>
+			<card>5</card>
+			<card>4</card>
+			<card>3</card>
+			<card>2</card>
+			<card>As</card>
+		</cards_per_suit>
+                <jokes>0</jokes>
+		<visual_styles>
+			<visual_style>
+				<name>standard</name>
+				<path>cardset-standard</path>
+			</visual_style>
+		</visual_styles>
+	</deck_class>
+	
+	<deck_class>
+        <name>Spanish</name>
+		<suits>
+			<suit>Diamond</suit>
+			<suit>Hearts</suit>
+			<suit>Picks</suit>
+			<suit>Flowers</suit>
+		</suits>
+
+		<!-- Defino solo el nombre, el valor se los da el juego -->
+		<cards_per_suit>
+			<card>As</card>
+			<card>King</card>
+			<card>Queen</card>
+			<card>10</card>
+			<card>9</card>
+			<card>8</card>
+		</cards_per_suit>
+		<jokes>2</jokes>
+	</deck_class>
+</deck_classes>

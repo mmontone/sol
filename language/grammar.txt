@@ -1,0 +1,111 @@
+%left "+" "-";
+%left "*" "/";
+%left "=>";
+%left "and" "or";
+%right "not";
+%nonassoc "=" "/=" "<" ">" "<=" ">=";
+%left "->";
+
+Solitary ::= Name 'name'
+             PilesConfiguration 'piles'
+             GameInitialization 'initActions'
+             Rules 'rules'
+                     { self grammarBuilder buildSolitaryNamed: name piles: piles initActions: initActions rules: rules };
+
+Name ::=  UppercaseIdentifier 'solitaryName' "solitary"  { solitaryName };
+
+UppercaseIdentifier ::= <Id> 'id' { id  value};
+LowercaseIdentifier ::= <id>  'id' { id  value};
+AnyString ::= <string> 'str' { str value };
+Natural ::= <natural> 'n' { n value asNumber };
+
+PropertyValue ::= AnyString 'str' { str }  | 
+                          UppercaseIdentifier 'id' { id } |
+                          LowercaseIdentifier 'id' { id } | 
+                          Natural 'n' { n };
+
+PilesConfiguration ::= "Configuration" PileDef+ 'pileDefs' { pileDefs };
+
+PileDef ::= UppercaseIdentifier 'pileType' "named" LowercaseIdentifier 'pileName' PileProperties 'properties'
+		              { self grammarBuilder buildPileNamed: pileName type: pileType properties: properties } |
+                UppercaseIdentifier 'pileType' "named" LowercaseIdentifier 'pileName'
+		             { self grammarBuilder buildPileNamed: pileName type: pileType } |
+                Natural 'cantPiles' UppercaseIdentifier 'pileType' "named" LowercaseIdentifier 'pileGroupName' PileProperties 'properties'
+                         { self grammarBuilder buildPileGroupNamed: pileGroupName type: pileType count: cantPiles properties: properties } |
+                Natural 'cantPiles' UppercaseIdentifier 'pileType' "named" LowercaseIdentifier 'pileGroupName'
+                         { self grammarBuilder buildPileGroupNamed: pileGroupName type: pileType count: cantPiles };
+
+PileProperties  ::= PileProperty  |
+                           PileProperties PileProperty;
+
+PileProperty ::= LowercaseIdentifier 'propertyName' <def_2> PropertyValue 'propertyValue'
+                             { self grammarBuilder buildPropertyNamed: propertyName value: propertyValue };
+
+GameInitialization ::= "Initialization" Actions 'actions' { actions };
+
+Rules ::= "Rules" RuleDefs 'ruleDefs' { ruleDefs };
+
+RuleDefs ::= RuleDef |
+                   RuleDefs RuleDef ;
+
+RuleDef ::= "to" "move" "from" RuleParameter 'sourcePile' "to" RuleParameter 'targetPile'
+                 "check" BooleanExpression 'condition'
+                        { self grammarBuilder toMoveFrom: sourcePile to: targetPile check: condition };
+
+RuleParameter ::= LowercaseIdentifier 'pile' 
+                                         { self grammarBuilder buildSinglePileRuleParameter: pile  } |
+                            LowercaseIdentifier 'pileGroupName' "(" Variable 'pile'  ")"
+                                         { self grammarBuilder buildPileGroupRuleParameter: pileGroupName pile: pile };
+
+Actions  ::= Action  |
+                  Actions Action;
+
+PileCardsCount ::= Natural 'n' { n } |
+                            "all" { #all } |
+                            "rest" { #rest };
+
+Action ::= "move" PileCardsCount 'cardsCount' "cards" "from" Expression 'sourcePile' "to" Expression 'targetPile'
+                     { self grammarBuilder move: cardsCount from: sourcePile to: targetPile } |
+               "mix" Expression 'pile' { self grammarBuilder mix: pile } |
+               "win" { self grammarBuilder win } |
+               "lose" { self grammarBuilder lose } |
+               "for-each" LowercaseIdentifier 'element' "in" Expression 'set' "[" Actions 'actions' "]" 
+                      { self grammarBuilder forEach: element in: set do: actions };
+
+# avoid type management in the parser
+Expression ::= Comparison 'comp' { comp } |
+                      OperationApplication 'operation' { operation} |
+                      NumberExpression 'numexp' { numexp } |
+                      BooleanExpression 'boolexp' { boolexp } |
+                      Variable 'var' { var} |
+                      <literal_string> 'str' { str value } |
+                     "(" Expression 'e' ")" { e };
+
+Variable ::= LowercaseIdentifier 'var' { var };
+
+# the implementation of "=" is assumed for each of the language elements (numbers, cards, suits, etc)
+Comparison ::= Expression 'e1' "="  Expression 'e2' { self grammarBuilder areEqual: e1 and: e2 }   |
+               Expression 'e1' "/="  Expression 'e2' { self grammarBuilder areDifferent: e1 and: e2 } |
+               Expression 'e1' ">" Expression 'e2' { self grammarBuilder isGreater: e1 than: e2 }    |
+               Expression 'e1' "<" Expression 'e2' { self grammarBuilder isLower: e1 than: e2 }    |
+               Expression 'e1' ">=" Expression 'e2' { self grammarBuilder isGreaterOrEqual: e1 than: e2 }  |
+               Expression 'e1' "<=" Expression 'e2' { self grammarBuilder isLowerOrEqual: e1 than: e2 };
+
+NumberExpression ::= Expression 'e1' "+" Expression 'e2' { self grammarBuilder add: e2 to: e1  } |
+                     Expression 'e1' "*" Expression 'e2' { self grammarBuilder multiply: e1 by: e2 }  |
+                     Expression 'e1' "-" Expression 'e2' { self grammarBuilder substract: e2 from: e1 }  |
+                     Expression 'e1' "/" Expression 'e2' { self grammarBuilder divide: e1 by: e2 }  |
+                     Natural 'n' { n };
+
+BooleanExpression ::= Expression 'e1' "and" Expression 'e2' { self grammarBuilder andBetween: e1 and: e2 }
+                  | Expression 'e1' "or" Expression 'e2' { self grammarBuilder orBetween: e1  and: e2 }
+                  | Expression 'e1' "=>" Expression 'e2' { self grammarBuilder thenBetween: e1 and: e2 }
+                  | "not" Expression 'e' { self grammarBuilder not: exp }
+                  |  "for all" Variable 'element' "in" Expression 'set' "check"  Expression 'exp'
+                                      { self grammarBuilder forAll: element in: set check: exp } 
+                  | "exists" Variable 'element' "in" Expression 'set' "such" "that" Expression 'exp'
+                                      { self grammarBuilder exists: element in: set that: exp }
+                  | "true" {true}
+                  | "false" {false};
+                  
+OperationApplication ::= Expression 'element' "->" LowercaseIdentifier 'operation' { self grammarBuilder buildOperationApplication: operation to: element };

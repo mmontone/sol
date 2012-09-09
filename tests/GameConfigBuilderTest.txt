@@ -1,0 +1,32 @@
+Configuration
+
+Deck named deck
+     class ? Pocker
+
+7 PlayingPile named playing_piles
+     move_cards ? 1
+
+Talon named talon
+     repository ? repository
+     take_cards ? 3
+     cyclic ? yes
+
+Repository named repository
+
+Foundation named foundation
+
+Initialization
+
+mix main_deck
+for-each pile in playing_piles [
+   move 5 cards from main_deck to pile]
+move 1 cards from deck to foundation
+move rest cards from deck to talon
+
+Rules
+
+to move from playing_piles (pile) to foundation
+check pile->top_card->name = 'King' and foundation->top_card->name = 'As' or
+      (pile->top_card->name = 'As' and foundation->top_card->name = 'King') or
+      (pile->top_card->name = foundation->top_card->name) or
+      (pile->top_card->previous->name = foundation->top_card->name)

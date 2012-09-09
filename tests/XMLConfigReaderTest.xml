@@ -1,0 +1,9 @@
+<xml_config_reader_test>
+  <data_element name="data_element_name">
+    data
+  </data_element>
+  <list_of_elements>
+    <element>elem_1</element>
+    <element>elem_2</element>
+  </list_of_elements>
+</xml_config_reader_test>

@@ -1,0 +1,49 @@
+<sol>
+     <name>Golf</name>
+     <single_deck/>
+     <distribution_mode>Random</distribution_mode>
+     <>
+</sol>
+
+<sol>
+  <name>Golf</name>
+  <decks>
+    <deck>
+      <name>deck_A</name>
+      <class>Pocker</class>
+    </deck>
+  </decks>
+  <piles>
+    <pile_collection>
+      <cant>16</cant>
+      <cards>
+    </pile_collection>
+  </piles>
+  <initial_distribution>
+    <each_pile>
+  </initial_distribution>
+  <distribution_mode>Random</distribution_mode>
+</sol>
+
+Quiero hacer algo así y es un quilombo con xml:
+
+deck:
+  Pocker deck named main_deck
+  Spanish deck named auxiliary_deck
+
+Por ejemplo, un solitario que use los valores de las cartas de truco o alguno que sume puntos.
+card_values:
+  main_deck:
+    King 13. Joke 14. As 20.
+
+piles:
+  20 numbered piles named main_piles
+  pile named pile_A
+
+distribute:
+  6 cards from auxiliary_deck to main_piles 1 to 6
+  8 cards from maindeck to pile_A
+
+
+
+

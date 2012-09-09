@@ -1,0 +1,49 @@
+Configuration
+
+Deck named deck
+     class ? Pocker
+
+7 PlayingPile named playing_piles
+     take_cards ? single
+     layout ? vertical
+     group_layout ? horizontal
+     separation    ? 5
+     relative_x    ? 0
+     relative_y    ? 150
+
+
+Foundation named foundation
+     relative_x ? 100
+     relative_y ? 0
+     layout ? flat
+
+Talon named talon
+     repository ? foundation
+     take ? 3
+     circular ? no
+     relative_x ? 0
+     relative_y ? 0
+     layout     ? flat
+
+Initialization
+
+mix deck
+for-each pile in playing_piles
+   [move 5 cards from deck to pile]
+move 1 cards from deck to foundation
+move rest cards from deck to talon
+
+Rules
+
+to move from playing_piles (pile) to foundation
+check pile_taken->size = 1 and
+      ((pile_taken->top_card->name = 'King' and foundation->top_card->name = 'As') or
+      ((pile_taken->top_card->name = 'As' and foundation->top_card->name = 'King') or
+      ((pile_taken->top_card->value = (foundation->top_card->value + 1)) or
+      ((pile_taken->top_card->value = (foundation->top_card->value - 1))))))
+
+to move from playing_piles(source_pile) to playing_piles(target_pile)
+check false
+
+to move from foundation to playing_piles (pile)
+check false

@@ -1,0 +1,87 @@
+Solitary ::= Name
+             PilesConfiguration 
+             GameInitialization 
+             Rules 
+                     
+Name ::=  UppercaseIdentifier <String> "solitary";
+
+UppercaseIdentifier ::= <Id>; 
+LowercaseIdentifier ::= <id>;
+AnyString ::= <string>;
+Natural ::= <natural>;
+
+PropertyValue ::= AnyString | 
+                  UppercaseIdentifier |
+                  LowercaseIdentifier | 
+                  Natural;
+
+PilesConfiguration ::= "Configuration" PileDef+; 
+
+PileDef ::= UppercaseIdentifier "named" LowercaseIdentifier PileProperties |
+            UppercaseIdentifier "named" LowercaseIdentifier |
+            Natural UppercaseIdentifier "named" LowercaseIdentifier PileProperties |
+            Natural UppercaseIdentifier "named" LowercaseIdentifier; 
+
+PileProperties  ::= PileProperty  |
+                    PileProperties PileProperty;
+
+PileProperty ::= LowercaseIdentifier <def_2> PropertyValue;
+                             
+GameInitialization ::= "Initialization" Actions;
+
+Rules ::= "Rules" RuleDefs;
+
+RuleDefs ::= RuleDef |
+             RuleDefs RuleDef ;
+
+RuleDef ::= "to" "move" "from" RuleParameter "to" RuleParameter 
+                 "check" Expression; 
+
+RuleParameter ::= LowercaseIdentifier |
+                  LowercaseIdentifier  "(" Variable ")";
+                            
+Actions  ::= Action  |
+             Actions Action;
+
+PileCardsCount ::= Natural { n } |
+                   "all" |
+                   "rest";
+
+Action ::= "move" PileCardsCount "cards" "from" Expression "to" Expression |
+           "mix" Expression |
+           "for-each" LowercaseIdentifier "in" Expression "[" Actions "]"; 
+
+
+Expression ::= Comparison |
+               OperationApplication |
+               NumberExpression |
+               BooleanExpression |
+               Variable |
+               <literal_string> |
+               "(" Expression ")";
+
+Variable ::= LowercaseIdentifier;
+
+Comparison ::= Expression "="  Expression |
+               Expression "/="  Expression |
+               Expression ">" Expression |
+               Expression "<" Expression |
+               Expression ">=" Expression |
+               Expression "<=" Expression;
+
+NumberExpression ::= Expression "+" Expression |
+                     Expression "*" Expression |
+                     Expression "-" Expression |
+                     Expression "/" Expression |
+                     Natural;
+
+BooleanExpression ::= Expression "and" Expression | 
+                      Expression "or" Expression  | 
+                      Expression "=>" Expression  | 
+                      "not" Expression |  
+                      "for all" Variable "in" Expression "check"  Expression | 
+                      "exists" Variable "in" Expression "such" "that" Expression | 
+                      "true" | 
+                      "false";
+                  
+OperationApplication ::= Expression "->" LowercaseIdentifier;

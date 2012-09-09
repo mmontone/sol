@@ -1,0 +1,133 @@
+%left "+" "-";
+%left "*" "/";
+%left "=>";
+%left "&&" "||";
+
+Name ::= "Nombre" <sep> Strings 'sts' {sts};
+Strings ::= <String> 'string' <string>* 'strings' {string value, (strings inject:'' into:[:a :b | a, '_', b value]) };
+Cuantity ::= <natural> 'n' {n} | "ninguna" {0};
+
+Specification ::= Name 'n' 
+                        Configuration 'conf' 
+                        Init 'ini' 
+                        Rules 'rules'
+      {Sol.Grammar.GameSpecification new: n init: ini configuration:conf rules: rules}; 
+
+Configuration ::= "Configuracion" <sep> 
+                             Decks 'decks' 
+                             PlayingPiles 'playingPiles' 
+                             Talons 'talons' 
+                             Foundations 'foundations' 
+                             WastePiles 'wastePiles'  
+    {Sol.Grammar.Configuration new: decks wastePiles: wastePiles talons: talons foundations: foundations playingPiles: playingPiles};
+
+Decks ::= "mazos" <def> Cuantity 'cant' DeckType 't' <end> {Sol.Grammar.Decks new:cant value type:t};
+
+PlayingPiles ::= "pilas" "de" "juego" <def> Cuantity 'cant' <end> {Sol.Grammar.PlayingPilesSpec new:cant value};
+WastePiles ::= "pilas" "auxiliares" <def> WastePilesSpec 's' <end> {s};
+WastePilesSpec ::= Cuantity 'cant' {cant value = 0 ifTrue:[^Sol.Grammar.NoWastePiles new] ifFalse:[^Sol.Grammar.WastePilesSpec new:cant value]};
+Talons ::= "pozos" <def> TalonsSpec 'spec'<end> {Sol.Grammar.Talons new: spec};
+TalonsSpec ::= {OrderedCollection new} | TalonSpec 'spec' {OrderedCollection with: spec} | TalonSpec 'spec' ";" TalonsSpec 'specCol' {specCol add: spec;yourself};
+TalonSpec ::= "0" {Sol.Grammar.NoTalon new} | Cuantity 'cant' "," TurnCards 'turn' "," Circularity 'circ' "," Repository 'rep' {Sol.Grammar.TalonSpec new: cant value turn: turn circular: circ repository: rep};
+TurnCards ::= "una" "carta" {1} | "dos" "cartas" {2} | "tres" "cartas" {3};
+Circularity ::= "circular" {true} | "no circular" {false};
+Repository ::= "con" "repositorio" {true} | "sin" "repositorio" {false};
+
+Foundations ::= "bases" <def> Cuantity 'cant' <end> {Sol.Grammar.FoundationSpec new: cant value};
+DeckType ::= "españoles" {Sol.Grammar.SpanishDeck new} | "poker" {Sol.Grammar.PokerDeck new};
+
+
+Init ::= "Inicio" <sep> CardsInPiles 'initConf' {Sol.Grammar.Init new: initConf };
+CardsInPiles ::= CardsInPile+ 'cs' {cs};
+CardsInPile ::= "cartas" "en" "pilas" "de" "juego" <def> CardsCount 'cant' <end> {Sol.Grammar.PlayingPileInitCount new:cant}
+                      | "cartas" "en" "bases" <def> CardsCount 'cant' <end> {Sol.Grammar.FoundationsInitCount new: cant}
+                      | "cartas" "en" "pozos" <def> CardsCount 'cant' <end> {Sol.Grammar.TalonsInitCount new: cant}
+                      | "cartas" "en" "pilas" "auxiliares" <def> CardsCount 'cant' <end> {Sol.Grammar.WastePileInitCount new: cant};
+CardsCount ::= "resto" {Sol.Grammar.InitRest new} | "todos" "a" Cuantity 'cant' {Sol.Grammar.InitAll new: cant value}
+			   | "todas" "a" Cuantity 'cant' {Sol.Grammar.InitAll new: cant value} | NaturalsList 'lst' {Sol.Grammar.ListInitValues new: lst};
+NaturalsList ::= Cuantity+ 'lista' {lista collect:[:n| n value asNumber]};
+
+
+Rules ::= "Reglas" <sep> RulesList 'lst' {Sol.Grammar.Rules new:lst};
+RulesList ::= {OrderedCollection new} | "#" Rule 'rule' RulesList 'rules'{rules add: rule; yourself};
+Rule ::= CommonRule 'rule' {rule} |  SpecialRule 'rule' {rule};
+
+CommonRule::= RuleHeader 'h' <def> RuleDescription 'desc'  {Sol.Grammar.CommonRule new: h description:desc};
+RuleHeader ::= "mover" Pile 'pile1' "=>" Pile 'pile2' {Sol.Grammar.MoveHeader new: pile1 target:pile2} |
+               "sacar" "del" "pozo" {Sol.Grammar.RemoveFromTalonHeader new};
+Pile ::= BasicPile 'p' "(" Variable 'v' ")" {Sol.Grammar.Pile_Variable new: p variable: v} | BasicPile 'p' {p};
+BasicPile ::= "pozo" {Sol.Grammar.Talon new} | "base" {Sol.Grammar.Foundation new} | "pila" "de" "juego" {Sol.Grammar.PlayingPile new}
+			| "pila" "auxiliar" {Sol.Grammar.WastePile new} | Variable 'var' {var} ;
+Variable ::= <string> 's' {Sol.Grammar.Variable new:s value};
+
+RuleDescription ::= Line+ 'lines' {lines};
+Line ::= "si" Conditions 'cond' "entonces" Actions 'act' {Sol.Grammar.DescriptionLine new: cond actions:act};
+Conditions ::= Conditions 'cond1' "&&" Conditions 'cond2' {Sol.Grammar.And new:cond1 with:cond2}
+                  | Conditions 'cond1' "||" Conditions 'cond2' {Sol.Grammar.Or new:cond1 with:cond2}
+                  | Conditions 'cond1' "=>" Conditions 'cond1' {Sol.Grammar.Implies new:cond1 with:cond2}
+                  | "¬" "(" Conditions 'cond' ")" {Sol.Grammar.Not new: cond}
+                  | SimpleCondition 'c' {c}
+			| "y-para-cada" "(" BasicPile 'p' Variable 'v' ")" "[" Conditions 'cs' "]" {Sol.Grammar.AndForEach new:p using: v check:cs}
+			| "o-para-cada" "(" BasicPile 'p' Variable 'v' ")" "[" Conditions 'cs' "]" {Sol.Grammar.OrForEach new:p using: v check:cs}
+			| "(" Conditions 'c' ")" {c};
+
+SimpleCondition ::= "V" {Sol.Grammar.True new}
+                   | "F" {Sol.Grammar.False new}
+                   | "vacia" "(" BasicPile 'p' ")" {Sol.Grammar.EmptyPile new:p}
+			 | EqExpression 'e' {e}
+                   | IntegerSubExpression 'e1' ComparisonOperator 'op' IntegerSubExpression 'e2' {op new: e1 and:e2}
+			 | "(" Condiciones 'cs' ")" {cs};
+
+EqExpression ::= IntegerSubExpression 'e1' EqOp 'op' IntegerSubExpression 'e2' {op new:e1 and:e2}
+                   | SuitSubExpression 'e1' EqOp 'op' SuitSubExpression 'e2' {op new:e1 and:e2}
+                   | ColorSubExpression 'e1' EqOp 'op' ColorSubExpression 'e2' {op new:e1 and:e2}
+                   | TypeSubExpression 'e1' EqOp 'op' TypeSubExpression 'e2' {op new:e1 and:e2.}
+                   | Card 'c1' EqOp 'op' Card 'c2' {op new:c1 and:c2};
+
+TypeSubExpression ::= "tipo" "(" Card 'p' ")" {Sol.Grammar.CardType new:p} | CardType 't' {t}
+					| "anterior" "(" TypeSubExpression 't' ")" {Sol.Grammar.PreviousCardType new:t}
+					| "siguiente" "(" TypeSubExpression 't' ")" {Sol.Grammar.NextCardType new: t};
+CardType ::= "as" {Sol.Grammar.As new} | Number 'n' {Sol.Grammar.Number new} | "rey" {Sol.Grammar.King new} | "reina" {Sol.Grammar.Queen new} | "joker"
+                       {Sol.Grammar.Joker new} | "zota" {Sol.Grammar.Ten new};
+Number ::="uno" {Sol.Grammar.Number new:1} | "dos" {Sol.Grammar.Number new:2} | "tres" {Sol.Grammar.Number new:3} | "cuatro" {Sol.Grammar.Number new:4}
+              | "cinco" {Sol.Grammar.Number new:5} | "seis" {Sol.Grammar.Number new:6} | "siete" {Sol.Grammar.Number new:7} | "ocho" {Sol.Grammar.Number new:8}
+              | "nueve" {Sol.Grammar.Number new:9} | "diez" {Sol.Grammar.Ten new};
+
+EqOp ::= "==" {Sol.Grammar.Comparison} | "/=" {Sol.Grammar.ComparisonNot};
+
+SuitSubExpression ::= "palo" "(" Card 'card' ")" {Sol.Grammar.CardSuit new:card} | Suit 's' {s};
+Suit ::= "espada" {Sol.Grammar.Spade new} | "oro" {Sol.Grammar.Gold new} | "copa" {Sol.Grammar.Cup new} | "basto" {Sol.Grammar.Rough new}
+		| "trebol" {So.Grammar.Club new} | "corazon" {Sol.Grammar.Heart new} | "pica" {Sol.Grammar.Spade new} | "diamante" {Sol.Grammar.Diamond new};
+Card ::= "tope" "(" BasicPile 'p' ")" {Sol.Grammar.TopPile new:p.}
+        | "siguiente" "(" Card 'c' ")" {Sol.Grammar.PreviousCard new:c}
+        | "anterior" "(" Card 'c' ")" {Sol.Grammar.NextCard new:c};
+
+ColorSubExpression ::= "color" "(" Card 'c' ")" {Sol.Grammar.CardColorExpression new: c} | "rojo" {Sol.Grammar.Red new} | "negro" {Sol.Grammar.Black new};
+
+IntegerSubExpression ::= CardsCountInPile 'c' {c}
+				 | CardsCountInPiles 'cp' {cp}
+				 | Cuantity 'n' {n value}
+                         | IntegerSubExpression 'e1' "+" IntegerSubExpression 'e2' {Sol.Grammar.Plus new: e1 with: e2}
+                         | IntegerSubExpression 'e1' "*" IntegerSubExpression 'e2' {Sol.Grammar.Mult new: e1 with: e2}
+                         | IntegerSubExpression 'e1' "-" IntegerSubExpression 'e2' {Sol.Grammar.Minus new: e1 with: e2}
+                         | IntegerSubExpression 'e1' "/" IntegerSubExpression 'e2' {Sol.Grammar.Div new: e1 with: e2}
+                         | "(" IntegerSubExpression 'e' ")" {e};
+CardsCountInPile ::= "cantidad" "de" "cartas" "(" BasicPile 'p' ")" {Sol.Grammar.CardsCountInPile new: 'p'};
+CardsCountInPiles ::= "cantidad" "en" "(" PilesType 'pt' ")" {Sol.Grammar.CardsCountInPilesType new: pt};
+PilesType ::= "bases" {Sol.Grammar.Foundations new} | "pozos" {Sol.Grammar.Talons new} | "pilas" "auxiliares" {Sol.Grammar.WastePiles new}
+			| "mazos" {Sol.Grammar.AllDecks new};
+ComparisonOperator ::=">" {Sol.Grammar.Greater} | ">=" {Sol.Grammar.GreaterE} | "<" {Sol.Grammar.Lower} | "<=" {Sol.Grammar.LowerE};
+
+
+SpecialRule ::= SpecialRuleType 'tr' <def> Conditions 'conds' {tr new:conds};
+SpecialRuleType ::= "perder" {Sol.Grammar.LoseRule} | "ganar" {Sol.Grammar.WinRule};
+
+
+Actions ::= {OrderedCollection new} |  Action 'a' <end> {a} | Accion 'a' ";" Actions 'as' {as add:a; yourself};
+Action ::= "mover" BasicPile 'p1'  "a" BasicPile 'p2' {Sol.Grammar.Move new: p1 to:p2.} |
+              "sacar" "cartas" {Sol.Grammar.RemoveCards new} |
+              "deshacer" {Sol.Grammar.UndoAction new} | "dar" "vuelta" "cartas" {Sol.Grammar.TurnCards new} |"**COMPLETAR******" {nil};
+
+
+GameStates ::= {OrderedCollection new}  | GameStates "," State {nil};
+State ::= <String> {nil};

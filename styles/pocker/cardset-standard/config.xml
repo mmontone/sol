@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- 
+
+	Archivo de configuración del *framework* con los estilos de cartas disponibles
+	Quizas podria no existir y hacer la configuracion con reflection
+
+-->
+
+<deck_style>
+	<class>Pocker</class>
+	<path>cardset-standard</path>
+	<name>standard</name>
+</deck_styles>
