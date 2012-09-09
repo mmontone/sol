@@ -1,0 +1,139 @@
+Configuration
+
+Deck named deck
+     class ? Pocker
+
+7 PlayingPile named playing_piles
+     take_cards ? multiple
+     layout ? vertical
+     group_layout ? horizontal
+     separation    ? 5
+     relative_x    ? 0
+     relative_y    ? 150
+
+Foundation named clubs_foundation
+     relative_x ? 300
+     relative_y ? 0
+     layout ? flat
+
+Foundation named diamonds_foundation
+     relative_x ? 400
+     relative_y ? 0
+     layout ? flat
+
+Foundation named hearts_foundation
+     relative_x ? 500
+     relative_y ? 0
+     layout ? flat
+
+Foundation named spades_foundation
+     relative_x ? 600
+     relative_y ? 0
+     layout ? flat
+
+PlayingPile named repository
+     take_cards ? single
+     relative_x ? 100
+     relative_y ? 0
+     layout ? flat
+	
+Talon named talon
+     repository ? repository
+     take ? 3
+     circular ? no
+     relative_x ? 0
+     relative_y ? 0
+     layout     ? flat
+
+Initialization
+
+mix deck
+for-each pile in playing_piles
+   [move 5 cards from deck to pile]
+move 1 cards from deck to repository
+move rest cards from deck to talon
+
+Rules
+
+to move from playing_piles (pile) to clubs_foundation
+check (pile_taken->size = 1) and (pile_taken->top_card->suit = 'clubs' and ((pile_taken->top_card->name = 'As') or( (clubs_foundation->size /= 0) and (pile_taken->top_card->value = (clubs_foundation->top_card->value + 1)))))
+
+to move from repository to clubs_foundation
+check pile_taken->top_card->suit = 'clubs' and ((pile_taken->top_card->name = 'As') or((clubs_foundation->size /= 0) and (pile_taken->top_card->value = (clubs_foundation->top_card->value + 1))))
+
+to move from playing_piles (pile) to diamonds_foundation
+check (pile_taken->size = 1) and (pile_taken->top_card->suit = 'diamonds' and ((pile_taken->top_card->name = 'As') or((diamonds_foundation->size /= 0) and (pile_taken->top_card->value = (diamonds_foundation->top_card->value + 1)))))
+
+to move from repository to diamonds_foundation
+check pile_taken->top_card->suit = 'diamonds' and ((pile_taken->top_card->name = 'As') or((diamonds_foundation->size /= 0) and (pile_taken->top_card->value = (diamonds_foundation->top_card->value + 1))))
+
+to move from playing_piles (pile) to spades_foundation
+check (pile_taken->size = 1) and (pile_taken->top_card->suit = 'spades' and ((pile_taken->top_card->name = 'As') or((spades_foundation->size /= 0) and (pile_taken->top_card->value = (spades_foundation->top_card->value + 1)))))
+
+to move from repository to spades_foundation
+check pile_taken->top_card->suit = 'spades' and ((pile_taken->top_card->name = 'As') or((spades_foundation->size /= 0) and (pile_taken->top_card->value = (spades_foundation->top_card->value + 1))))
+
+to move from playing_piles (pile) to hearts_foundation
+check (pile_taken->size = 1) and (pile_taken->top_card->suit = 'hearts' and ((pile_taken->top_card->name = 'As') or((hearts_foundation->size /= 0) and (pile_taken->top_card->value = (hearts_foundation->top_card->value + 1)))))
+
+to move from repository to hearts_foundation
+check pile_taken->top_card->suit = 'hearts' and ((pile_taken->top_card->name = 'As') or((hearts_foundation->size /= 0) and (pile_taken->top_card->value = (hearts_foundation->top_card->value + 1))))
+
+to move from playing_piles(source_pile) to playing_piles(target_pile)
+check target_pile->size = 0 or ((pile_taken->bottom_card->suit /= target_pile->top_card->suit) and (pile_taken->bottom_card->value = (target_pile->top_card->value + 1)))
+
+to move from clubs_foundation to clubs_foundation
+check false
+
+to move from clubs_foundation to diamonds_foundation
+check false
+
+to move from clubs_foundation to spades_foundation
+check false
+
+to move from clubs_foundation to hearts_foundation
+check false
+
+to move from diamonds_foundation to clubs_foundation
+check false
+
+to move from diamonds_foundation to diamonds_foundation
+check false
+
+to move from diamonds_foundation to spades_foundation
+check false
+
+to move from diamonds_foundation to hearts_foundation
+check false
+
+to move from spades_foundation to clubs_foundation
+check false
+
+to move from spades_foundation to diamonds_foundation
+check false
+
+to move from spades_foundation to spades_foundation
+check false
+
+to move from spades_foundation to hearts_foundation
+check false
+
+to move from hearts_foundation to clubs_foundation
+check false
+
+to move from hearts_foundation to diamonds_foundation
+check false
+
+to move from hearts_foundation to spades_foundation
+check false
+
+to move from hearts_foundation to hearts_foundation
+check false
+
+to move from repository to repository
+check false
+
+to move from repository to playing_piles(target_pile)
+check (target_pile->size = 0) or (pile_taken->bottom_card->suit /= target_pile->top_card->suit) and (pile_taken->bottom_card->value = (target_pile->top_card->value + 1))
+
+to move from playing_piles(pile) to repository check false
